@@ -36,11 +36,49 @@ if(isset($_SERVER["PATH_INFO"])) {
             $con = openSql();
             $job = strtolower($url[2]);
 
-            if($job=="functionlist") {
-                if(isset($url[3])) {
-                    $search = $con->real_escape_string($url[3]);
-                    $result = $con->query("SELECT functionName FROM functions WHERE functionName like '%$search%'");
+            switch($job) {
+                case "functionlist":
+                    if(isset($url[3])) {
+                        $search = $con->real_escape_string($url[3]);
+                        $result = $con->query("SELECT `functionName`, `return`, `entity`, `category`, `clientserver` FROM `functions` WHERE `functionName` like '%$search%';");
 
+                        if (!$result) {
+                            die('Invalid query: ' . $con->error);
+                        }
+
+                        while ($row = $result->fetch_object()){
+                            $functionlist[] = $row;
+                        }
+                    } else {
+                        $result = $con->query('SELECT `functionName`, `return`, `entity`, `category`, `clientserver` FROM `functions`');
+
+                        if (!$result) {
+                            die('Invalid query: ' . mysql_error());
+                        }
+
+                        while ($row = $result->fetch_object()) {
+                            $functionlist[] = $row;
+                        }
+                    }
+                break;
+
+                case "function":
+                    if(isset($url[3])) {
+                        $search = $con->real_escape_string($url[3]);
+
+                        $result = $con->query("SELECT * FROM `functions` WHERE `functionName` = '$search' LIMIT 1;");
+                        if (!$result) {
+                            die('Invalid query: ' . $con->error);
+                        }
+
+                        while ($row = $result->fetch_object()){
+                            $functionlist[] = $row;
+                        }
+                    }
+                break;
+
+                case "return":
+                    $result = $con->query("SELECT DISTINCT `return` FROM `functions`;");
                     if (!$result) {
                         die('Invalid query: ' . $con->error);
                     }
@@ -48,24 +86,10 @@ if(isset($_SERVER["PATH_INFO"])) {
                     while ($row = $result->fetch_object()){
                         $functionlist[] = $row;
                     }
-                } else {
-                    $result = $con->query('SELECT functionName FROM functions');
+                break;
 
-                    if (!$result) {
-                        die('Invalid query: ' . mysql_error());
-                    }
-
-                    while ($row = $result->fetch_object()) {
-                        $functionlist[] = $row;
-                    }
-                }
-            }
-
-            if($job == "function") {
-                if(isset($url[3])) {
-                    $search = $con->real_escape_string($url[3]);
-
-                    $result = $con->query("SELECT * FROM functions WHERE functionName = '$search' LIMIT 1");
+                case "entities":
+                    $result = $con->query("SELECT DISTINCT `entity` FROM `functions`;");
                     if (!$result) {
                         die('Invalid query: ' . $con->error);
                     }
@@ -73,8 +97,32 @@ if(isset($_SERVER["PATH_INFO"])) {
                     while ($row = $result->fetch_object()){
                         $functionlist[] = $row;
                     }
-                }
+                break;
+
+                case "categories":
+                    $result = $con->query("SELECT DISTINCT `category` FROM `functions`;");
+                    if (!$result) {
+                        die('Invalid query: ' . $con->error);
+                    }
+
+                    while ($row = $result->fetch_object()){
+                        $functionlist[] = $row;
+                    }
+                break;
+
+                case "clientserver":
+                    $result = $con->query("SELECT DISTINCT `clientserver` FROM `functions`;");
+                    if (!$result) {
+                        die('Invalid query: ' . $con->error);
+                    }
+
+                    while ($row = $result->fetch_object()){
+                        $functionlist[] = $row;
+                    }
+                break;
             }
+
+
             if(isset($result)) {
                 $result->close();
             }

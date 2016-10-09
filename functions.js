@@ -16,6 +16,10 @@
 * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 var functionListRaw = {};
+var returnList = [];
+var entityList = [];
+var categoryList = [];
+var clientserverList = [];
 //Draw Function Data on Main
 function showFunction(functionName) {
     var functionData = {};
@@ -85,7 +89,7 @@ function showFunction(functionName) {
         $("<strong />")
             .text("CATEGORY: ")
             .appendTo(div);
-        div.append(functionData.description);
+        div.append(functionData.category);
 
         //ServerClient
         div = $("<div />").appendTo(li);
@@ -109,8 +113,41 @@ function showFunction(functionName) {
         div.append(functionData.example);
     });
 }
+//Update the list with our Filter Requirements
+function filterList(navlist) {
+    var tmplist = {};
+    //Store our Filters in a variable for speed
+    var returnval = $('#return').val();
+    var entityval = $('#entity').val();
+    var categoryval = $('#category').val();
+    var clientserverval = $('#clientserver').val();
+
+    $(navlist).each(function () {
+            $.each(this, function(index, value) {
+                //Loop through each filter and skip if it does not meet the filter requirements
+                if(returnval != "none" && returnval != value.return) {
+                    return true;
+                }
+                if(entityval != "none" && value.entity != entityval) {
+                    return true;
+                }
+                if(categoryval != "none" && value.category != categoryval) {
+                    return true;
+                }
+                if(clientserverval != "none" && value.clientserver != clientserverval) {
+                    return true;
+                }
+                //If we get this car add the Function to the list
+                tmplist[value.functionName] = {};
+                tmplist[value.functionName].functionName = value.functionName;
+            });
+        });
+    return tmplist;
+}
 //Function for drawing from list
 function loadNavigation(navlist) {
+    //Check List against filter
+    navlist = filterList(navlist);
     //Clear any existing Functions
     $("#navlist").empty();
     //Create Functions header
@@ -133,24 +170,56 @@ function loadNavigation(navlist) {
         });
     });
 }
-//Get array from SQL Database
-$(document).ready(function () {
-    $.getJSON( "api.php/get/functionlist", function( data ) {
+//Repeatitve addOption function
+function addOption(list, text, val=text) {
+    $(list).append($('<option>', { 
+                value: val,
+                text : text 
+    }));
+}
+//Function for Populating filter options
+function loadFilter() {
+    //Clear existing filter
+    $('#return').empty();
+    $('#entity').empty();
+    $('#category').empty();
+    $('#clientserver').empty();
+    //Add "No Filter" Type to Each box
+    addOption("#return", "No Filter", "none");
+    addOption("#entity", "No Filter", "none");
+    addOption("#category", "No Filter", "none");
+    addOption("#clientserver", "No Filter", "none");
+    //Get Return types
+    $.getJSON( "api.php/get/return", function( data ) {
         $.each(data, function (key, val) {
-            functionListRaw[val.functionName] = {};
-            functionListRaw[val.functionName].functionName = val.functionName;
+            returnList.push(val.return);
+            addOption("#return", val.return);
         });
-        //Draw results in navigation
-        loadNavigation(functionListRaw);
     });
-    //Check if this was a direct link and load function
-    var hash = window.location.hash.substring(1);
-    if(hash != "") {
-        showFunction(hash);
-    }
-});
-//Monitor Keyup for Search
-$("#searchbox").on("keyup", function() {
+    //Get Entity Types
+    $.getJSON( "api.php/get/entities", function( data ) {
+        $.each(data, function (key, val) {
+            entityList.push(val.entity);
+            addOption("#entity", val.entity);
+        });
+    });
+    //Get category Types
+    $.getJSON( "api.php/get/categories", function( data ) {
+        $.each(data, function (key, val) {
+            categoryList.push(val.category);
+            addOption("#category", val.category);
+        });
+    });
+    //Get Client / Server Types
+    $.getJSON( "api.php/get/clientserver", function( data ) {
+        $.each(data, function (key, val) {
+            clientserverList.push(val.clientserver);
+            addOption("#clientserver", val.clientserver);
+        });
+    });
+}
+//Wildcard search for Function list
+function searchFunctions() {
     var functionListSearch = {};
     //Trim spaces
     var search = $.trim($("#searchbox").val());
@@ -173,4 +242,53 @@ $("#searchbox").on("keyup", function() {
         //Draw full list
         loadNavigation(functionListRaw);
     }
+}
+//Get array from SQL Database
+$(document).ready(function () {
+    loadFilter();
+    $.getJSON( "api.php/get/functionlist", function( data ) {
+        $.each(data, function (key, val) {
+            functionListRaw[val.functionName] = {};
+            functionListRaw[val.functionName].functionName = val.functionName;
+            functionListRaw[val.functionName].return = val.return;
+            functionListRaw[val.functionName].entity = val.entity;
+            functionListRaw[val.functionName].category = val.category;
+            functionListRaw[val.functionName].clientserver = val.clientserver;
+        });
+        //Draw results in navigation
+        loadNavigation(functionListRaw);
+    });
+    //Check if this was a direct link and load function
+    var hash = window.location.hash.substring(1);
+    if(hash != "") {
+        showFunction(hash);
+    }
+});
+//Monitor Keyup for Search
+$("#searchbox").on("keyup", function() {
+    searchFunctions();
+});
+//Hook Filter button
+$('#filter').on("click", function() {
+    if ( $("#filterlist").is( ":hidden" ) ) {
+        $("#filterlist").slideDown();
+    } else {
+        $("#filterlist").slideUp();
+    }
+});
+
+$('#return').change(function() {
+    searchFunctions();
+});
+
+$('#entity').change(function() {
+    searchFunctions();
+});
+
+$('#category').change(function() {
+    searchFunctions();
+});
+
+$('#clientserver').change(function() {
+    searchFunctions();
 });

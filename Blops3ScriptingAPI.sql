@@ -47,7 +47,7 @@ CREATE TABLE `functions` (
   `return` varchar(16) NOT NULL DEFAULT 'void',
   `entity` varchar(32) NOT NULL,
   `vars` blob NOT NULL,
-  `catagory` varchar(32) NOT NULL,
+  `category` varchar(32) NOT NULL,
   `clientserver` varchar(16) NOT NULL,
   `summary` varchar(512) NOT NULL,
   `example` varchar(512) NOT NULL,
